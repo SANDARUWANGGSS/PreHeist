@@ -6,5 +6,29 @@
       "Bash(git init:*)",
       "Bash(git switch:*)"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path' | { read -r f; npx prettier --write \"$f\" 2>/dev/null; } || true",
+            "statusMessage": "Formatting with Prettier..."
+          },
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path' | { read -r f; npx eslint \"$f\" --max-warnings=0 2>/dev/null; } || true",
+            "statusMessage": "Linting with ESLint..."
+          },
+          {
+            "type": "command",
+            "command": "jq -r '.tool_input.file_path' | { read -r f; if echo \"$f\" | grep -q '^components/'; then comp=$(echo \"$f\" | sed 's|components/\\([^/]*\\)/.*|\\1|'); testfile=\"tests/components/${comp}.test.tsx\"; if [ -f \"$testfile\" ]; then npm test \"$testfile\" 2>/dev/null; fi; fi; } || true",
+            "statusMessage": "Running component tests..."
+          }
+        ]
+      }
+    ]
   }
 }

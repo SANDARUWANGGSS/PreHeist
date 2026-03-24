@@ -2,16 +2,17 @@
 // when logged in --> to /heists
 // when not logged in --> to /login
 
-import { Clock8 } from "lucide-react"
+import { Clock8 } from 'lucide-react'
 
 export default function Home() {
   return (
     <div className="center-content">
       <div className="page-content">
         <h1>
-          P<Clock8 className="logo" strokeWidth={2.75} />cket Heist
+          P<Clock8 className="logo" strokeWidth={2.75} />
+          cket Heist
         </h1>
-        <div>Tiny missions. Big office mischief.</div>
+        <div>Steal the meeting. Own the day.</div>
       </div>
     </div>
   )
