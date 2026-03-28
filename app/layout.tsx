@@ -1,9 +1,10 @@
-import type { Metadata } from "next"
-import "@/app/globals.css"
+import type { Metadata } from 'next'
+import '@/app/globals.css'
+import AuthProvider from '@/context/AuthContext'
 
 export const metadata: Metadata = {
-  title: "Pocket Heist",
-  description: "Tiny missions. Big office mischief.",
+  title: 'Pocket Heist',
+  description: 'Tiny missions. Big office mischief.',
 }
 
 export default function RootLayout({
@@ -14,7 +15,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   )
