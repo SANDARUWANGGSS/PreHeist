@@ -84,6 +84,17 @@
   opacity: 0.88;
 }
 
+.submitButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.errorText {
+  color: var(--color-error);
+  font-size: 0.875rem;
+  text-align: center;
+}
+
 .switchText {
   text-align: center;
   font-size: 0.875rem;

@@ -2,7 +2,12 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Eye, EyeOff } from 'lucide-react'
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
+import { setDoc, doc } from 'firebase/firestore'
+import { auth, db } from '@/lib/firebase'
+import { generateCodename } from '@/lib/generateCodename'
 import styles from './AuthForm.module.css'
 
 interface AuthFormProps {
@@ -13,10 +18,37 @@ export default function AuthForm({ mode }: AuthFormProps) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
 
-  function handleSubmit(e: React.FormEvent) {
+  const router = useRouter()
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    console.log({ email, password })
+
+    if (mode === 'login') {
+      console.log({ email, password })
+      return
+    }
+
+    setLoading(true)
+    setError('')
+
+    try {
+      const { user } = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        password
+      )
+      const codename = generateCodename()
+      await updateProfile(user, { displayName: codename })
+      await setDoc(doc(db, 'users', user.uid), { id: user.uid, codename })
+      router.push('/heists')
+    } catch {
+      setError('Something went wrong. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -32,6 +64,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
           onChange={(e) => setEmail(e.target.value)}
           className={styles.input}
           placeholder="you@example.com"
+          disabled={loading}
           required
         />
       </div>
@@ -48,6 +81,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
             onChange={(e) => setPassword(e.target.value)}
             className={styles.input}
             placeholder="••••••••"
+            disabled={loading}
             required
           />
           <button
@@ -55,15 +89,18 @@ export default function AuthForm({ mode }: AuthFormProps) {
             className={styles.toggleButton}
             onClick={() => setShowPassword((prev) => !prev)}
             aria-label={showPassword ? 'Hide password' : 'Show password'}
+            disabled={loading}
           >
             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
           </button>
         </div>
       </div>
 
-      <button type="submit" className={styles.submitButton}>
-        {mode === 'login' ? 'Login' : 'Sign Up'}
+      <button type="submit" className={styles.submitButton} disabled={loading}>
+        {loading ? 'Loading...' : mode === 'login' ? 'Login' : 'Sign Up'}
       </button>
+
+      {error && <p className={styles.errorText}>{error}</p>}
 
       <p className={styles.switchText}>
         {mode === 'login' ? (
