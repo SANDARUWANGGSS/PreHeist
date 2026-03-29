@@ -4,7 +4,11 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Eye, EyeOff } from 'lucide-react'
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
+} from 'firebase/auth'
 import { setDoc, doc } from 'firebase/firestore'
 import { auth, db } from '@/lib/firebase'
 import { generateCodename } from '@/lib/generateCodename'
@@ -20,19 +24,28 @@ export default function AuthForm({ mode }: AuthFormProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
 
   const router = useRouter()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
-    if (mode === 'login') {
-      console.log({ email, password })
-      return
-    }
-
     setLoading(true)
     setError('')
+    setSuccess('')
+
+    if (mode === 'login') {
+      try {
+        await signInWithEmailAndPassword(auth, email, password)
+        setSuccess('Logged in successfully!')
+      } catch {
+        setError('Invalid email or password.')
+      } finally {
+        setLoading(false)
+      }
+      return
+    }
 
     try {
       const { user } = await createUserWithEmailAndPassword(
@@ -101,6 +114,7 @@ export default function AuthForm({ mode }: AuthFormProps) {
       </button>
 
       {error && <p className={styles.errorText}>{error}</p>}
+      {success && <p className={styles.successText}>{success}</p>}
 
       <p className={styles.switchText}>
         {mode === 'login' ? (
