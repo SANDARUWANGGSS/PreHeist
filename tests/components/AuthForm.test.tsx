@@ -4,6 +4,7 @@ import AuthForm from '@/components/AuthForm'
 
 vi.mock('firebase/auth', () => ({
   createUserWithEmailAndPassword: vi.fn(),
+  signInWithEmailAndPassword: vi.fn(),
   updateProfile: vi.fn(),
 }))
 vi.mock('firebase/firestore', () => ({
@@ -18,11 +19,16 @@ vi.mock('@/lib/generateCodename', () => ({
   generateCodename: vi.fn().mockReturnValue('TestShadowFox'),
 }))
 
-import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth'
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
+} from 'firebase/auth'
 import { setDoc } from 'firebase/firestore'
 import { useRouter } from 'next/navigation'
 
 const mockCreateUser = vi.mocked(createUserWithEmailAndPassword)
+const mockSignIn = vi.mocked(signInWithEmailAndPassword)
 const mockUpdateProfile = vi.mocked(updateProfile)
 const mockSetDoc = vi.mocked(setDoc)
 
@@ -34,6 +40,7 @@ describe('AuthForm', () => {
     mockPush = vi.fn()
     vi.mocked(useRouter).mockReturnValue({ push: mockPush } as any)
     mockCreateUser.mockResolvedValue({ user: { uid: 'uid-123' } } as any)
+    mockSignIn.mockResolvedValue({ user: { uid: 'uid-123' } } as any)
     mockUpdateProfile.mockResolvedValue(undefined)
     mockSetDoc.mockResolvedValue(undefined)
   })
@@ -79,8 +86,7 @@ describe('AuthForm', () => {
     )
   })
 
-  it('logs email and password to console on submit', () => {
-    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+  it('calls signInWithEmailAndPassword with the entered credentials on submit', async () => {
     render(<AuthForm mode="login" />)
 
     fireEvent.change(screen.getByLabelText('Email'), {
@@ -89,15 +95,52 @@ describe('AuthForm', () => {
     fireEvent.change(screen.getByLabelText('Password'), {
       target: { value: 'secret123' },
     })
+
+    await act(async () => {
+      fireEvent.submit(
+        screen.getByRole('button', { name: 'Login' }).closest('form')!
+      )
+    })
+
+    expect(mockSignIn).toHaveBeenCalledWith({}, 'test@example.com', 'secret123')
+  })
+
+  it('shows a success message after a successful login', async () => {
+    render(<AuthForm mode="login" />)
+
+    await act(async () => {
+      fireEvent.submit(
+        screen.getByRole('button', { name: 'Login' }).closest('form')!
+      )
+    })
+
+    expect(screen.getByText('Logged in successfully!')).toBeInTheDocument()
+  })
+
+  it('shows an error message when Firebase returns an auth error', async () => {
+    mockSignIn.mockRejectedValue(new Error('auth/invalid-credential'))
+    render(<AuthForm mode="login" />)
+
+    await act(async () => {
+      fireEvent.submit(
+        screen.getByRole('button', { name: 'Login' }).closest('form')!
+      )
+    })
+
+    expect(screen.getByText('Invalid email or password.')).toBeInTheDocument()
+  })
+
+  it('disables the form while login is in progress', () => {
+    mockSignIn.mockReturnValue(new Promise(() => {}))
+    render(<AuthForm mode="login" />)
+
     fireEvent.submit(
       screen.getByRole('button', { name: 'Login' }).closest('form')!
     )
 
-    expect(consoleSpy).toHaveBeenCalledWith({
-      email: 'test@example.com',
-      password: 'secret123',
-    })
-    consoleSpy.mockRestore()
+    expect(screen.getByLabelText('Email')).toBeDisabled()
+    expect(screen.getByLabelText('Password')).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Loading...' })).toBeDisabled()
   })
 
   it('switch link points to /signup in login mode', () => {
