@@ -1,6 +1,18 @@
-import { Timestamp } from 'firebase/firestore'
+import { FieldValue, Timestamp } from 'firebase/firestore'
 
 export type HeistFinalStatus = 'success' | 'failure'
+
+export interface CreateHeistInput {
+  title: string
+  description: string
+  createdBy: string
+  createdByCodename: string
+  assignedTo: string
+  assignedToCodename: string
+  deadline: Timestamp
+  finalStatus: null
+  createdAt: FieldValue
+}
 
 export interface Heist {
   id: string
